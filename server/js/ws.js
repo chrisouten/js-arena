@@ -14,7 +14,8 @@ var cls = require("./lib/class"),
     _ = require('underscore'),
     BISON = require('bison'),
     WS = {},
-    useBison = false;
+    useBison = false,
+    Arena = require('./arena');
 
 module.exports = WS;
 
@@ -85,7 +86,7 @@ var Connection = cls.Class.extend({
     },
     
     close: function(logError) {
-        log.info("Closing connection to "+this._connection.remoteAddress+". Error: "+logError);
+        console.log("Closing connection to "+this._connection.remoteAddress+". Error: "+logError);
         this._connection.close();
     }
 });
@@ -199,6 +200,36 @@ WS.MultiVersionWebsocketServer = Server.extend({
     
     onRequestStatus: function(status_callback) {
         this.status_callback = status_callback;
+    },
+    
+    addArena : function(arena) {
+        this._arenas.push(arena);
+    },
+    
+    createArena : function(player) {
+        var arena = new Arena(player);
+        this.addArena(arena);
+        return arena;
+    },
+    
+    getArena : function(player) {
+        var self = this;
+        var arena = null;
+        connect = function() {
+            if (arena != null) {
+                arena.connect(player);
+            } else {
+                arena = self.createArena(player);
+            }
+        }
+        arena = _.find(this._arenas, function(arena) {
+            if (arena.players.length < 5) {
+                return arena;
+            }
+        })
+        connect();
+        
+        return arena
     }
 
 });
